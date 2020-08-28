@@ -112,6 +112,8 @@ declare class StateProvider extends Component<StateContextProps, StateContextSta
     animate: any;
     animation: any;
     maxBounds: any;
+    mouseX: any;
+    mouseY: any;
     componentDidMount(): void;
     componentWillUnmount(): void;
     componentDidUpdate(oldProps: any, oldState: any): void;

@@ -4,3 +4,4 @@ export declare function calculateMidpoint(event: any, scale: any, contentCompone
     mouseY: number;
 };
 export declare function handleZoomPinch(event: any): void;
+export declare function handleZoomOrPanPinch(event: any): void;

@@ -17,7 +17,7 @@ import {
   handleCalculateBounds,
 } from "./zoom";
 import { handleDisableAnimation, animateComponent } from "./animations";
-import { handleZoomPinch } from "./pinch";
+import { handleZoomOrPanPinch } from "./pinch";
 import { handlePanning, handlePanningAnimation } from "./pan";
 import {
   handleFireVelocity,
@@ -80,6 +80,9 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
   public animate = null;
   public animation = null;
   public maxBounds = null;
+
+  public mouseX;
+  public mouseY;
 
   componentDidMount() {
     const passiveOption = makePassiveEventOption(false);
@@ -354,9 +357,13 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
   //////////
 
   handlePinchStart = event => {
-    const { scale } = this.stateProvider;
+    const { scale, positionX, positionY } = this.stateProvider;
     event.preventDefault();
     event.stopPropagation();
+
+    this.startCoords = { x: event.touches[0].clientX - positionX, y: event.touches[0].clientY - positionY };
+    this.mouseX = null;
+    this.mouseY = null;
 
     handleDisableAnimation.call(this);
     const distance = getDistance(event.touches[0], event.touches[1]);
@@ -370,7 +377,7 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
 
   handlePinch = event => {
     this.isDown = false;
-    handleZoomPinch.call(this, event);
+    handleZoomOrPanPinch.call(this, event);
     handleCallback(this.props.onPinching, this.getCallbackProps());
   };
 

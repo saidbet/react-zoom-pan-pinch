@@ -747,7 +747,7 @@ function calculateMidpoint(event, scale, contentComponent) {
         mouseY: (firstPointY + secondPointY) / 2 / scale,
     };
 }
-function handleZoomPinch(event) {
+function handleZoomOrPanPinch(event) {
     var _a = this.stateProvider, scale = _a.scale, _b = _a.options, limitToBounds = _b.limitToBounds, limitToWrapper = _b.limitToWrapper, _c = _a.scalePadding, disabled = _c.disabled, size = _c.size, limitsOnWheel = _a.wheel.limitsOnWheel, pinch = _a.pinch;
     var contentComponent = this.state.contentComponent;
     if (pinch.disabled || this.stateProvider.options.disabled)
@@ -766,16 +766,22 @@ function handleZoomPinch(event) {
         return;
     var currentDistance = getCurrentDistance(event);
     var newScale = calculatePinchZoom.call(this, currentDistance, this.pinchStartDistance);
-    if (checkIfInfinite(newScale) || newScale === scale)
+    if (checkIfInfinite(newScale))
         return;
     // Get new element sizes to calculate bounds
     var bounds = handleCalculateBounds.call(this, newScale, limitToWrapper);
     // Calculate transformations
     var isLimitedToBounds = limitToBounds && (disabled || size === 0 || limitsOnWheel);
+    var prevMouseX = this.mouseX;
+    var prevMouseY = this.mouseY;
+    this.mouseX = event.touches[0].clientX;
+    this.mouseY = event.touches[0].clientY;
+    var offsetX = prevMouseX ? this.mouseX - prevMouseX : 0;
+    var offsetY = prevMouseY ? this.mouseY - prevMouseY : 0;
     var _e = handleCalculatePositions.call(this, mouseX, mouseY, newScale, bounds, isLimitedToBounds), x = _e.x, y = _e.y;
     this.lastDistance = currentDistance;
-    this.stateProvider.positionX = x;
-    this.stateProvider.positionY = y;
+    this.stateProvider.positionX = x + offsetX;
+    this.stateProvider.positionY = y + offsetY;
     this.stateProvider.scale = newScale;
     this.stateProvider.previousScale = scale;
     // update component transformation
@@ -1134,9 +1140,12 @@ var StateProvider = /** @class */ (function (_super) {
         // Pinch
         //////////
         _this.handlePinchStart = function (event) {
-            var scale = _this.stateProvider.scale;
+            var _a = _this.stateProvider, scale = _a.scale, positionX = _a.positionX, positionY = _a.positionY;
             event.preventDefault();
             event.stopPropagation();
+            _this.startCoords = { x: event.touches[0].clientX - positionX, y: event.touches[0].clientY - positionY };
+            _this.mouseX = null;
+            _this.mouseY = null;
             handleDisableAnimation.call(_this);
             var distance = getDistance(event.touches[0], event.touches[1]);
             _this.pinchStartDistance = distance;
@@ -1147,7 +1156,7 @@ var StateProvider = /** @class */ (function (_super) {
         };
         _this.handlePinch = function (event) {
             _this.isDown = false;
-            handleZoomPinch.call(_this, event);
+            handleZoomOrPanPinch.call(_this, event);
             handleCallback(_this.props.onPinching, _this.getCallbackProps());
         };
         _this.handlePinchStop = function () {

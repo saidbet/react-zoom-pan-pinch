@@ -118,3 +118,78 @@ export function handleZoomPinch(event) {
   // update component transformation
   this.applyTransformation();
 }
+
+export function handleZoomOrPanPinch(event){
+  const {
+    scale,
+    options: { limitToBounds, limitToWrapper },
+    scalePadding: { disabled, size },
+    wheel: { limitsOnWheel },
+    pinch,
+  } = this.stateProvider;
+  const { contentComponent } = this.state;
+  if (pinch.disabled || this.stateProvider.options.disabled) return;
+
+  if (event.cancelable) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  // if one finger starts from outside of wrapper
+  if (this.pinchStartDistance === null) return;
+
+  // Position transformation
+  const { mouseX, mouseY } = calculateMidpoint(event, scale, contentComponent);
+
+  // if touches goes off of the wrapper element
+  if (checkIfInfinite(mouseX) || checkIfInfinite(mouseY)) return;
+
+  const currentDistance = getCurrentDistance(event);
+
+  const newScale = calculatePinchZoom.call(
+    this,
+    currentDistance,
+    this.pinchStartDistance,
+  );
+
+  if (checkIfInfinite(newScale)) return;
+
+  // Get new element sizes to calculate bounds
+  const bounds = handleCalculateBounds.call(
+    this,
+    newScale,
+    limitToWrapper,
+  );
+
+  // Calculate transformations
+  const isLimitedToBounds = limitToBounds && (disabled || size === 0 || limitsOnWheel);
+
+  const prevMouseX = this.mouseX;
+  const prevMouseY = this.mouseY;
+
+  this.mouseX = event.touches[0].clientX;
+  this.mouseY = event.touches[0].clientY;
+
+  const offsetX = prevMouseX ? this.mouseX - prevMouseX : 0;
+  const offsetY = prevMouseY ? this.mouseY - prevMouseY : 0;
+
+  const { x, y } = handleCalculatePositions.call(
+    this,
+    mouseX,
+    mouseY,
+    newScale,
+    bounds,
+    isLimitedToBounds
+  );
+
+  this.lastDistance = currentDistance;
+
+  this.stateProvider.positionX = x + offsetX;
+  this.stateProvider.positionY = y + offsetY;
+
+  this.stateProvider.scale = newScale;
+  this.stateProvider.previousScale = scale;
+
+  // update component transformation
+  this.applyTransformation();
+}
