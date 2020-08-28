@@ -166,7 +166,7 @@ export function handleZoomToPoint(isDisabled, scale, mouseX, mouseY, event) {
   return { scale: newScale, positionX: x, positionY: y };
 }
 
-export function handlePaddingAnimation() {
+export function handlePaddingAnimation(callback) {
   const {
     scale,
     wrapperComponent,
@@ -197,14 +197,14 @@ export function handlePaddingAnimation() {
     targetState,
     speed: animationTime,
     type: animationType,
-  });
+  }, callback);
 }
 
 /**
  * Button zoom events
  */
 
-export function handleDoubleClick(event) {
+export function handleDoubleClick(event, callback) {
   event.preventDefault();
   event.stopPropagation();
   const {
@@ -250,7 +250,7 @@ export function handleDoubleClick(event) {
     targetState,
     speed: time,
     type: animationType,
-  });
+  }, callback);
 }
 
 export function handleZoomControls(customDelta, customStep) {

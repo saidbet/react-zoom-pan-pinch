@@ -39,7 +39,7 @@ export function animate(animationName, animationTime, callback) {
   requestAnimationFrame(this.animation);
 }
 
-export function animateComponent({ targetState, speed, type }) {
+export function animateComponent({ targetState, speed, type }, callback) {
   const { scale, positionX, positionY } = this.stateProvider;
 
   const scaleDiff = targetState.scale - scale;
@@ -62,6 +62,9 @@ export function animateComponent({ targetState, speed, type }) {
 
       // apply animation changes
       this.applyTransformation();
+
+      if(step === 1 && callback)
+        callback();
     });
   }
 }

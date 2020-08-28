@@ -341,10 +341,10 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
 
       // start velocity animation
       if (this.velocity && velocity && scale > 1) {
-        animateVelocity.call(this);
+        animateVelocity.call(this, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
       } else {
         // fire fit to bounds animation
-        handlePanningAnimation.call(this);
+        handlePanningAnimation.call(this, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
       }
     }
   };
@@ -381,7 +381,7 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
       this.lastDistance = null;
       this.pinchStartScale = null;
       this.pinchStartDistance = null;
-      handlePaddingAnimation.call(this);
+      handlePaddingAnimation.call(this, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
       handleCallback(this.props.onPinchingStop, this.getCallbackProps());
     }
   };
@@ -453,14 +453,14 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
   handleDbClick = event => {
     const {
       options,
-      doubleClick: { disabled, step },
+      doubleClick: { disabled },
     } = this.stateProvider;
     const { wrapperComponent, contentComponent } = this.state;
 
     if (!event) throw Error("Double click function requires event prop");
     if (disabled || options.disabled || !wrapperComponent || !contentComponent)
       return;
-    handleDoubleClick.call(this, event, 1, step);
+    handleDoubleClick.call(this, event, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
   };
 
   setScale = (newScale, speed = 200, type = "easeOut") => {

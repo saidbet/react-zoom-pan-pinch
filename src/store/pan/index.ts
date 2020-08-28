@@ -58,7 +58,7 @@ export function handlePanning(event) {
   handlePaddingAnimation.call(this, calculatedPosition.x, calculatedPosition.y);
 }
 
-export function handlePanningAnimation() {
+export function handlePanningAnimation(callback) {
   const {
     scale,
     options: { minScale },
@@ -74,7 +74,7 @@ export function handlePanningAnimation() {
     targetState,
     speed: panReturnAnimationTime,
     type: panReturnAnimationType,
-  });
+  }, callback);
 }
 
 export function handlePanToBounds() {

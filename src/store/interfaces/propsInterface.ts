@@ -93,4 +93,5 @@ export interface PropsList {
   onPinching?: any;
   onPinchingStop?: any;
   onZoomChange?: any;
+  onAnimationStop?: any;
 }

@@ -26,7 +26,7 @@ export function handleFireVelocity() {
   this.setState({ startAnimation: true });
 }
 
-export function animateVelocity() {
+export function animateVelocity(callback) {
   const {
     positionX,
     positionY,
@@ -151,6 +151,9 @@ export function animateVelocity() {
       // apply animation changes
       this.applyTransformation();
     }
+
+    if(step===1 && callback)
+      callback();
   });
 }
 

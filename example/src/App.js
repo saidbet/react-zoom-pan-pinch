@@ -77,6 +77,7 @@ export default class App extends Component {
             <div className="row align-items-center">
               <div className="col-lg-12 order-lg-2 example">
                 <TransformWrapper
+                  onAnimationStop={()=>console.log("onAnimationStop")}
                   options={{
                     limitToBounds,
                     transformEnabled,
