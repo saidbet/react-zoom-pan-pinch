@@ -235,7 +235,7 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
     clearTimeout(wheelAnimationTimer);
     wheelAnimationTimer = setTimeout(() => {
       if (!this.mounted) return;
-      handlePaddingAnimation.call(this, event);
+      handlePaddingAnimation.call(this, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
     }, wheelAnimationTime);
   };
 
@@ -434,7 +434,7 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
     if (!event) throw Error("Zoom in function requires event prop");
     if (disabled || options.disabled || !wrapperComponent || !contentComponent)
       return;
-    handleZoomControls.call(this, 1, step);
+    handleZoomControls.call(this, 1, step, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
   };
 
   zoomOut = event => {
@@ -447,7 +447,7 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
     if (!event) throw Error("Zoom out function requires event prop");
     if (disabled || options.disabled || !wrapperComponent || !contentComponent)
       return;
-    handleZoomControls.call(this, -1, step);
+    handleZoomControls.call(this, -1, step, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
   };
 
   handleDbClick = event => {
@@ -482,7 +482,7 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
       targetState,
       speed,
       type,
-    });
+    }, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
   };
 
   setPositionX = (newPosX, speed = 200, type = "easeOut") => {
@@ -505,7 +505,7 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
       targetState,
       speed,
       type,
-    });
+    }, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
   };
 
   setPositionY = (newPosY, speed = 200, type = "easeOut") => {
@@ -529,7 +529,7 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
       targetState,
       speed,
       type,
-    });
+    }, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
   };
 
   setTransform = (
@@ -559,7 +559,7 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
       targetState,
       speed,
       type,
-    });
+    }, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
   };
 
   resetTransform = () => {

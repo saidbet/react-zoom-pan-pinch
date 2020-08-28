@@ -92,7 +92,7 @@ export default class App extends Component {
                     velocity: enableVelocity,
                   }}
                   pinch={{ disabled: !pinchEnabled }}
-                  doubleClick={{ disabled: !dbClickEnabled }}
+                  doubleClick={{ disabled: !dbClickEnabled}}
                   wheel={{
                     wheelEnabled: enableWheel,
                     touchPadEnabled: enableTouchPadPinch,

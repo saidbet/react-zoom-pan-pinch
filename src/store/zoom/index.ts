@@ -177,7 +177,7 @@ export function handlePaddingAnimation(callback) {
 
   if (scale >= 1 || limitToBounds) {
     // fire fit to bounds animation
-    handlePanningAnimation.call(this);
+    handlePanningAnimation.call(this, callback);
   }
 
   if (isDisabled) return;
@@ -214,7 +214,7 @@ export function handleDoubleClick(event, callback) {
   } = this.stateProvider;
 
   if (mode === "reset") {
-    return resetTransformations.call(this, event, animationTime);
+    return resetTransformations.call(this, event, callback);
   }
   const delta = mode === "zoomOut" ? -1 : 1;
   const newScale = handleCalculateZoom.call(
@@ -253,7 +253,7 @@ export function handleDoubleClick(event, callback) {
   }, callback);
 }
 
-export function handleZoomControls(customDelta, customStep) {
+export function handleZoomControls(customDelta, customStep, callback) {
   const {
     scale,
     positionX,
@@ -306,10 +306,10 @@ export function handleZoomControls(customDelta, customStep) {
     targetState,
     speed: time,
     type: animationType,
-  });
+  }, callback);
 }
 
-export function resetTransformations(animationSpeed) {
+export function resetTransformations(animationSpeed, callback) {
   const {
     defaultScale,
     defaultPositionX,
@@ -357,7 +357,7 @@ export function resetTransformations(animationSpeed) {
     targetState,
     speed,
     type: reset.animationType,
-  });
+  }, callback);
 }
 
 function getButtonAnimationTime(targetScale, newScale, time) {

@@ -61,7 +61,7 @@ export function animateVelocity(callback) {
   );
 
   if (!animationTime) {
-    handlePanningAnimation.call(this);
+    handlePanningAnimation.call(this, callback);
     return;
   }
 
@@ -152,6 +152,7 @@ export function animateVelocity(callback) {
       this.applyTransformation();
     }
 
+    console.log(step);
     if(step===1 && callback)
       callback();
   });

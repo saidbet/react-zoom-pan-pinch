@@ -62,7 +62,7 @@ export function animateComponent({ targetState, speed, type }, callback) {
 
       // apply animation changes
       this.applyTransformation();
-
+      
       if(step === 1 && callback)
         callback();
     });

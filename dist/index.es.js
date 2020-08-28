@@ -620,7 +620,7 @@ function handlePaddingAnimation$1(callback) {
     var isDisabled = disabled || scale >= minScale;
     if (scale >= 1 || limitToBounds) {
         // fire fit to bounds animation
-        handlePanningAnimation.call(this);
+        handlePanningAnimation.call(this, callback);
     }
     if (isDisabled)
         return;
@@ -641,7 +641,7 @@ function handleDoubleClick(event, callback) {
     event.stopPropagation();
     var _a = this.stateProvider, contentComponent = _a.contentComponent, scale = _a.scale, _b = _a.doubleClick, disabled = _b.disabled, mode = _b.mode, step = _b.step, animationTime = _b.animationTime, animationType = _b.animationType;
     if (mode === "reset") {
-        return resetTransformations.call(this, event, animationTime);
+        return resetTransformations.call(this, event, callback);
     }
     var delta = mode === "zoomOut" ? -1 : 1;
     var newScale = handleCalculateZoom.call(this, delta, step, undefined, undefined, true);
@@ -657,7 +657,7 @@ function handleDoubleClick(event, callback) {
         type: animationType,
     }, callback);
 }
-function handleZoomControls(customDelta, customStep) {
+function handleZoomControls(customDelta, customStep, callback) {
     var _a = this.stateProvider, scale = _a.scale, positionX = _a.positionX, positionY = _a.positionY, wrapperComponent = _a.wrapperComponent, zoomIn = _a.zoomIn, zoomOut = _a.zoomOut;
     var wrapperWidth = wrapperComponent.offsetWidth;
     var wrapperHeight = wrapperComponent.offsetHeight;
@@ -679,9 +679,9 @@ function handleZoomControls(customDelta, customStep) {
         targetState: targetState,
         speed: time,
         type: animationType,
-    });
+    }, callback);
 }
-function resetTransformations(animationSpeed) {
+function resetTransformations(animationSpeed, callback) {
     var _a = this.props.defaultValues, defaultScale = _a.defaultScale, defaultPositionX = _a.defaultPositionX, defaultPositionY = _a.defaultPositionY;
     var _b = this.stateProvider, scale = _b.scale, positionX = _b.positionX, positionY = _b.positionY, reset = _b.reset, _c = _b.options, disabled = _c.disabled, limitToBounds = _c.limitToBounds, centerContent = _c.centerContent, limitToWrapper = _c.limitToWrapper;
     if (disabled || reset.disabled)
@@ -708,7 +708,7 @@ function resetTransformations(animationSpeed) {
         targetState: targetState,
         speed: speed,
         type: reset.animationType,
-    });
+    }, callback);
 }
 function getButtonAnimationTime(targetScale, newScale, time) {
     return time * (newScale / targetScale);
@@ -807,7 +807,7 @@ function animateVelocity(callback) {
     var _d = this.velocity, velocityX = _d.velocityX, velocityY = _d.velocityY, velocity = _d.velocity;
     var animationTime = velocityTimeSpeed.call(this, velocity, velocityBaseTime);
     if (!animationTime) {
-        handlePanningAnimation.call(this);
+        handlePanningAnimation.call(this, callback);
         return;
     }
     var targetX = velocityX;
@@ -849,6 +849,7 @@ function animateVelocity(callback) {
             // apply animation changes
             _this.applyTransformation();
         }
+        console.log(step);
         if (step === 1 && callback)
             callback();
     });
@@ -1047,7 +1048,7 @@ var StateProvider = /** @class */ (function (_super) {
             wheelAnimationTimer = setTimeout(function () {
                 if (!_this.mounted)
                     return;
-                handlePaddingAnimation$1.call(_this, event);
+                handlePaddingAnimation$1.call(_this, function () { return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps()); });
             }, wheelAnimationTime);
         };
         //////////
@@ -1198,7 +1199,7 @@ var StateProvider = /** @class */ (function (_super) {
                 throw Error("Zoom in function requires event prop");
             if (disabled || options.disabled || !wrapperComponent || !contentComponent)
                 return;
-            handleZoomControls.call(_this, 1, step);
+            handleZoomControls.call(_this, 1, step, function () { return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps()); });
         };
         _this.zoomOut = function (event) {
             var _a = _this.stateProvider, _b = _a.zoomOut, disabled = _b.disabled, step = _b.step, options = _a.options;
@@ -1207,7 +1208,7 @@ var StateProvider = /** @class */ (function (_super) {
                 throw Error("Zoom out function requires event prop");
             if (disabled || options.disabled || !wrapperComponent || !contentComponent)
                 return;
-            handleZoomControls.call(_this, -1, step);
+            handleZoomControls.call(_this, -1, step, function () { return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps()); });
         };
         _this.handleDbClick = function (event) {
             var _a = _this.stateProvider, options = _a.options, disabled = _a.doubleClick.disabled;
@@ -1234,7 +1235,7 @@ var StateProvider = /** @class */ (function (_super) {
                 targetState: targetState,
                 speed: speed,
                 type: type,
-            });
+            }, function () { return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps()); });
         };
         _this.setPositionX = function (newPosX, speed, type) {
             if (speed === void 0) { speed = 200; }
@@ -1252,7 +1253,7 @@ var StateProvider = /** @class */ (function (_super) {
                 targetState: targetState,
                 speed: speed,
                 type: type,
-            });
+            }, function () { return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps()); });
         };
         _this.setPositionY = function (newPosY, speed, type) {
             if (speed === void 0) { speed = 200; }
@@ -1270,7 +1271,7 @@ var StateProvider = /** @class */ (function (_super) {
                 targetState: targetState,
                 speed: speed,
                 type: type,
-            });
+            }, function () { return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps()); });
         };
         _this.setTransform = function (newPosX, newPosY, newScale, speed, type) {
             if (speed === void 0) { speed = 200; }
@@ -1288,7 +1289,7 @@ var StateProvider = /** @class */ (function (_super) {
                 targetState: targetState,
                 speed: speed,
                 type: type,
-            });
+            }, function () { return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps()); });
         };
         _this.resetTransform = function () {
             var _a = _this.stateProvider.options, disabled = _a.disabled, transformEnabled = _a.transformEnabled;

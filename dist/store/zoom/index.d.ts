@@ -21,5 +21,5 @@ export declare function handlePaddingAnimation(callback: any): void;
  * Button zoom events
  */
 export declare function handleDoubleClick(event: any, callback: any): any;
-export declare function handleZoomControls(customDelta: any, customStep: any): void;
-export declare function resetTransformations(animationSpeed: any): void;
+export declare function handleZoomControls(customDelta: any, customStep: any, callback: any): void;
+export declare function resetTransformations(animationSpeed: any, callback: any): void;
