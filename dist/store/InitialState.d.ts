@@ -44,6 +44,7 @@ export declare const initialState: {
         panReturnAnimationTime: number;
         panReturnAnimationType: string;
         disableOnTarget: any[];
+        dragThreshold: number;
     };
     pinch: {
         disabled: boolean;

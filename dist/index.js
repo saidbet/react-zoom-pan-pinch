@@ -105,6 +105,7 @@ var initialState = {
         panReturnAnimationTime: 400,
         panReturnAnimationType: "easeOut",
         disableOnTarget: [],
+        dragThreshold: 0.015
     },
     pinch: {
         disabled: false,
@@ -1015,6 +1016,106 @@ var StateProvider = /** @class */ (function (_super) {
         _this.animate = null;
         _this.animation = null;
         _this.maxBounds = null;
+        _this.movedSinceMouseDown = 0;
+        _this.isPanning = false;
+        _this.mouseDown = false;
+        _this.touchDown = false;
+        _this.movedSinceTouchDown = 0;
+        _this.firstTouchPos = { x: 0, y: 0 };
+        //////////
+        // Click events
+        //////////
+        _this.handleMouseDown = function () {
+            _this.movedSinceMouseDown = 0;
+            _this.isPanning = false;
+            _this.mouseDown = true;
+        };
+        _this.handleMouseMove = function (event) {
+            if (!_this.mouseDown)
+                return;
+            var _a = _this.stateProvider, pan = _a.pan, options = _a.options;
+            var mouseMovement = Math.abs(event.movementX / window.innerWidth) +
+                Math.abs(event.movementY / window.innerHeight);
+            _this.movedSinceMouseDown += mouseMovement;
+            if (_this.movedSinceMouseDown < pan.dragThreshold)
+                return;
+            if (!_this.isPanning) {
+                _this.isPanning = true;
+                _this.handleStartPanning(event);
+            }
+            if (options.disabled)
+                return;
+            if (!pan.disabled)
+                return _this.handlePanning(event);
+        };
+        _this.handleMouseUp = function () {
+            _this.handleStopPanning();
+            _this.movedSinceMouseDown = 0;
+            _this.isPanning = false;
+            _this.mouseDown = false;
+        };
+        //////////
+        // Touch Events
+        //////////
+        _this.handleTouchStart = function (event) {
+            var _a = _this.stateProvider, wrapperComponent = _a.wrapperComponent, contentComponent = _a.contentComponent, scale = _a.scale, _b = _a.options, disabled = _b.disabled, minScale = _b.minScale;
+            var touches = event.touches;
+            if (touches && touches.length === 1) {
+                _this.touchDown = true;
+                _this.movedSinceTouchDown = 0;
+                _this.isPanning = false;
+                _this.firstTouchPos = { x: touches[0].clientX, y: touches[0].clientY };
+            }
+            if (touches && touches.length === 2) {
+                if (disabled ||
+                    !wrapperComponent ||
+                    !contentComponent ||
+                    scale < minScale)
+                    return;
+                handleDisableAnimation.call(_this);
+                return _this.handlePinchStart(event);
+            }
+        };
+        _this.handleTouch = function (event) {
+            var _a = _this.stateProvider, pan = _a.pan, pinch = _a.pinch, options = _a.options;
+            if (event.touches && event.touches.length === 1) {
+                if (!_this.touchDown)
+                    return;
+                var movementX = Math.abs(_this.firstTouchPos.x - event.touches[0].clientX);
+                var movementY = Math.abs(_this.firstTouchPos.y - event.touches[0].clientY);
+                var movement = Math.abs(movementX / window.innerWidth) +
+                    Math.abs(movementY / window.innerHeight);
+                _this.movedSinceTouchDown += movement;
+                if (_this.movedSinceTouchDown < pan.dragThreshold)
+                    return;
+                if (!_this.isPanning) {
+                    _this.isPanning = true;
+                    _this.handleStartPanning(event);
+                }
+                if (options.disabled)
+                    return;
+                if (!pan.disabled)
+                    return _this.handlePanning(event);
+            }
+            if (event.touches && event.touches.length === 2) {
+                if (!options.disabled && !pinch.disabled) {
+                    return _this.handlePinch(event);
+                }
+            }
+        };
+        _this.handleTouchStop = function (event) {
+            if (event.touches && event.touches.length === 1) {
+                _this.handleStartPanning(event);
+                _this.isPanning = true;
+            }
+            if (!event.touches || event.touches.length === 0) {
+                _this.handleStopPanning();
+                _this.handlePinchStop();
+                _this.movedSinceTouchDown = 0;
+                _this.touchDown = false;
+                _this.isPanning = false;
+            }
+        };
         //////////
         // Wheel
         //////////
@@ -1062,7 +1163,9 @@ var StateProvider = /** @class */ (function (_super) {
             wheelAnimationTimer = setTimeout(function () {
                 if (!_this.mounted)
                     return;
-                handlePaddingAnimation$1.call(_this, function () { return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps()); });
+                handlePaddingAnimation$1.call(_this, function () {
+                    return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps());
+                });
             }, wheelAnimationTime);
         };
         //////////
@@ -1137,11 +1240,15 @@ var StateProvider = /** @class */ (function (_super) {
                 var _a = _this.stateProvider, velocity = _a.pan.velocity, scale = _a.scale;
                 // start velocity animation
                 if (_this.velocity && velocity && scale > 1) {
-                    animateVelocity.call(_this, function () { return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps()); });
+                    animateVelocity.call(_this, function () {
+                        return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps());
+                    });
                 }
                 else {
                     // fire fit to bounds animation
-                    handlePanningAnimation.call(_this, function () { return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps()); });
+                    handlePanningAnimation.call(_this, function () {
+                        return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps());
+                    });
                 }
             }
         };
@@ -1152,7 +1259,10 @@ var StateProvider = /** @class */ (function (_super) {
             var _a = _this.stateProvider, scale = _a.scale, positionX = _a.positionX, positionY = _a.positionY;
             event.preventDefault();
             event.stopPropagation();
-            _this.startCoords = { x: event.touches[0].clientX - positionX, y: event.touches[0].clientY - positionY };
+            _this.startCoords = {
+                x: event.touches[0].clientX - positionX,
+                y: event.touches[0].clientY - positionY,
+            };
             _this.mouseX = null;
             _this.mouseY = null;
             handleDisableAnimation.call(_this);
@@ -1175,36 +1285,11 @@ var StateProvider = /** @class */ (function (_super) {
                 _this.lastDistance = null;
                 _this.pinchStartScale = null;
                 _this.pinchStartDistance = null;
-                handlePaddingAnimation$1.call(_this, function () { return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps()); });
+                handlePaddingAnimation$1.call(_this, function () {
+                    return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps());
+                });
                 handleCallback(_this.props.onPinchingStop, _this.getCallbackProps());
             }
-        };
-        //////////
-        // Touch Events
-        //////////
-        _this.handleTouchStart = function (event) {
-            var _a = _this.stateProvider, wrapperComponent = _a.wrapperComponent, contentComponent = _a.contentComponent, scale = _a.scale, _b = _a.options, disabled = _b.disabled, minScale = _b.minScale;
-            var touches = event.touches;
-            if (disabled || !wrapperComponent || !contentComponent || scale < minScale)
-                return;
-            handleDisableAnimation.call(_this);
-            if (touches && touches.length === 1)
-                return _this.handleStartPanning(event);
-            if (touches && touches.length === 2)
-                return _this.handlePinchStart(event);
-        };
-        _this.handleTouch = function (event) {
-            var _a = _this.stateProvider, pan = _a.pan, pinch = _a.pinch, options = _a.options;
-            if (options.disabled)
-                return;
-            if (!pan.disabled && event.touches.length === 1)
-                return _this.handlePanning(event);
-            if (!pinch.disabled && event.touches.length === 2)
-                return _this.handlePinch(event);
-        };
-        _this.handleTouchStop = function () {
-            _this.handleStopPanning();
-            _this.handlePinchStop();
         };
         //////////
         // Controls
@@ -1216,7 +1301,10 @@ var StateProvider = /** @class */ (function (_super) {
                 throw Error("Zoom in function requires event prop");
             if (disabled || options.disabled || !wrapperComponent || !contentComponent)
                 return;
-            handleZoomControls.call(_this, 1, step, function () { return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps()); });
+            handleCallback(_this.props.onZoomChangeStart, _this.getCallbackProps());
+            handleZoomControls.call(_this, 1, step, function () {
+                return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps());
+            });
         };
         _this.zoomOut = function (event) {
             var _a = _this.stateProvider, _b = _a.zoomOut, disabled = _b.disabled, step = _b.step, options = _a.options;
@@ -1225,7 +1313,10 @@ var StateProvider = /** @class */ (function (_super) {
                 throw Error("Zoom out function requires event prop");
             if (disabled || options.disabled || !wrapperComponent || !contentComponent)
                 return;
-            handleZoomControls.call(_this, -1, step, function () { return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps()); });
+            handleCallback(_this.props.onZoomChangeStart, _this.getCallbackProps());
+            handleZoomControls.call(_this, -1, step, function () {
+                return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps());
+            });
         };
         _this.handleDbClick = function (event) {
             var _a = _this.stateProvider, options = _a.options, disabled = _a.doubleClick.disabled;
@@ -1234,7 +1325,10 @@ var StateProvider = /** @class */ (function (_super) {
                 throw Error("Double click function requires event prop");
             if (disabled || options.disabled || !wrapperComponent || !contentComponent)
                 return;
-            handleDoubleClick.call(_this, event, function () { return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps()); });
+            handleCallback(_this.props.onZoomChangeStart, _this.getCallbackProps());
+            handleDoubleClick.call(_this, event, function () {
+                return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps());
+            });
         };
         _this.setScale = function (newScale, speed, type) {
             if (speed === void 0) { speed = 200; }
@@ -1312,7 +1406,10 @@ var StateProvider = /** @class */ (function (_super) {
             var _a = _this.stateProvider.options, disabled = _a.disabled, transformEnabled = _a.transformEnabled;
             if (disabled || !transformEnabled)
                 return;
-            resetTransformations.call(_this);
+            handleCallback(_this.props.onZoomChangeStart, _this.getCallbackProps());
+            resetTransformations.call(_this, null, function () {
+                return handleCallback(_this.props.onAnimationStop, _this.getCallbackProps());
+            });
         };
         _this.setDefaultState = function () {
             _this.animation = null;
@@ -1385,15 +1482,15 @@ var StateProvider = /** @class */ (function (_super) {
     StateProvider.prototype.componentDidMount = function () {
         var passiveOption = makePassiveEventOption(false);
         // Panning on window to allow panning when mouse is out of wrapper
-        window.addEventListener("mousedown", this.handleStartPanning, passiveOption);
-        window.addEventListener("mousemove", this.handlePanning, passiveOption);
-        window.addEventListener("mouseup", this.handleStopPanning, passiveOption);
+        window.addEventListener("mousedown", this.handleMouseDown, passiveOption);
+        window.addEventListener("mousemove", this.handleMouseMove, passiveOption);
+        window.addEventListener("mouseup", this.handleMouseUp, passiveOption);
     };
     StateProvider.prototype.componentWillUnmount = function () {
         var passiveOption = makePassiveEventOption(false);
-        window.removeEventListener("mousedown", this.handleStartPanning, passiveOption);
-        window.removeEventListener("mousemove", this.handlePanning, passiveOption);
-        window.removeEventListener("mouseup", this.handleStopPanning, passiveOption);
+        window.removeEventListener("mousedown", this.handleMouseDown, passiveOption);
+        window.removeEventListener("mousemove", this.handleMouseMove, passiveOption);
+        window.removeEventListener("mouseup", this.handleMouseUp, passiveOption);
         handleDisableAnimation.call(this);
     };
     StateProvider.prototype.componentDidUpdate = function (oldProps, oldState) {
@@ -1461,7 +1558,7 @@ var StateProvider = /** @class */ (function (_super) {
 }(React.Component));
 
 var TransformWrapper = function (_a) {
-    var children = _a.children, defaultPositionX = _a.defaultPositionX, defaultPositionY = _a.defaultPositionY, defaultScale = _a.defaultScale, onWheelStart = _a.onWheelStart, onWheel = _a.onWheel, onWheelStop = _a.onWheelStop, onPanningStart = _a.onPanningStart, onPanning = _a.onPanning, onPanningStop = _a.onPanningStop, onPinchingStart = _a.onPinchingStart, onPinching = _a.onPinching, onPinchingStop = _a.onPinchingStop, onZoomChange = _a.onZoomChange, onAnimationStop = _a.onAnimationStop, rest = __rest(_a, ["children", "defaultPositionX", "defaultPositionY", "defaultScale", "onWheelStart", "onWheel", "onWheelStop", "onPanningStart", "onPanning", "onPanningStop", "onPinchingStart", "onPinching", "onPinchingStop", "onZoomChange", "onAnimationStop"]);
+    var children = _a.children, defaultPositionX = _a.defaultPositionX, defaultPositionY = _a.defaultPositionY, defaultScale = _a.defaultScale, onWheelStart = _a.onWheelStart, onWheel = _a.onWheel, onWheelStop = _a.onWheelStop, onPanningStart = _a.onPanningStart, onPanning = _a.onPanning, onPanningStop = _a.onPanningStop, onPinchingStart = _a.onPinchingStart, onPinching = _a.onPinching, onPinchingStop = _a.onPinchingStop, onZoomChange = _a.onZoomChange, onAnimationStop = _a.onAnimationStop, onZoomChangeStart = _a.onZoomChangeStart, rest = __rest(_a, ["children", "defaultPositionX", "defaultPositionY", "defaultScale", "onWheelStart", "onWheel", "onWheelStop", "onPanningStart", "onPanning", "onPanningStop", "onPinchingStart", "onPinching", "onPinchingStop", "onZoomChange", "onAnimationStop", "onZoomChangeStart"]);
     var props = __assign({}, rest);
     if (props.options && props.options.limitToWrapper) {
         props.options.limitToBounds = true;
@@ -1470,7 +1567,7 @@ var TransformWrapper = function (_a) {
             positionX: defaultPositionX,
             positionY: defaultPositionY,
             scale: defaultScale,
-        }), dynamicValues: deleteUndefinedProps(getValidPropsFromObject(props)), onWheelStart: onWheelStart, onWheel: onWheel, onWheelStop: onWheelStop, onPanningStart: onPanningStart, onPanning: onPanning, onPanningStop: onPanningStop, onPinchingStart: onPinchingStart, onPinching: onPinching, onPinchingStop: onPinchingStop, onZoomChange: onZoomChange, onAnimationStop: onAnimationStop }, children));
+        }), dynamicValues: deleteUndefinedProps(getValidPropsFromObject(props)), onWheelStart: onWheelStart, onWheel: onWheel, onWheelStop: onWheelStop, onPanningStart: onPanningStart, onPanning: onPanning, onPanningStop: onPanningStop, onPinchingStart: onPinchingStart, onPinching: onPinching, onPinchingStop: onPinchingStop, onZoomChange: onZoomChange, onAnimationStop: onAnimationStop, onZoomChangeStart: onZoomChangeStart }, children));
 };
 
 function styleInject(css, ref) {

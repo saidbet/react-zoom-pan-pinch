@@ -18,6 +18,7 @@ export interface StateContextProps {
   onPinchingStop: any;
   onZoomChange: any;
   onAnimationStop: any;
+  onZoomChangeStart: any;
 }
 export interface StateContextState {
   wrapperComponent: HTMLDivElement | undefined;

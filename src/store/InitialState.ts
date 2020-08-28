@@ -44,6 +44,7 @@ export const initialState = {
     panReturnAnimationTime: 400,
     panReturnAnimationType: "easeOut",
     disableOnTarget: [],
+    dragThreshold: 0.015
   },
   pinch: {
     disabled: false,

@@ -77,7 +77,8 @@ export default class App extends Component {
             <div className="row align-items-center">
               <div className="col-lg-12 order-lg-2 example">
                 <TransformWrapper
-                  onAnimationStop={()=>console.log("onAnimationStop")}
+                  onZoomChangeStart={()=>console.log('onZoomChange')}
+                  onAnimationStop={(event)=>console.log(event)}
                   options={{
                     limitToBounds,
                     transformEnabled,
@@ -85,14 +86,15 @@ export default class App extends Component {
                     limitToWrapper,
                   }}
                   pan={{
-                    disabled: !panningEnabled,
+                    disabled: false,
                     lockAxisX,
                     lockAxisY,
                     velocityEqualToMove,
                     velocity: enableVelocity,
+                    dragThreshold: 0.01
                   }}
                   pinch={{ disabled: !pinchEnabled }}
-                  doubleClick={{ disabled: !dbClickEnabled}}
+                  doubleClick={{ disabled: !dbClickEnabled, mode:"reset"}}
                   wheel={{
                     wheelEnabled: enableWheel,
                     touchPadEnabled: enableTouchPadPinch,

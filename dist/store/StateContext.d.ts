@@ -53,6 +53,7 @@ declare class StateProvider extends Component<StateContextProps, StateContextSta
             panReturnAnimationTime: number;
             panReturnAnimationType: string;
             disableOnTarget: any[];
+            dragThreshold: number;
         };
         pinch: {
             disabled: boolean;
@@ -114,9 +115,24 @@ declare class StateProvider extends Component<StateContextProps, StateContextSta
     maxBounds: any;
     mouseX: any;
     mouseY: any;
+    movedSinceMouseDown: number;
+    isPanning: boolean;
+    mouseDown: boolean;
+    touchDown: boolean;
+    movedSinceTouchDown: number;
+    firstTouchPos: {
+        x: number;
+        y: number;
+    };
     componentDidMount(): void;
     componentWillUnmount(): void;
     componentDidUpdate(oldProps: any, oldState: any): void;
+    handleMouseDown: () => void;
+    handleMouseMove: (event: any) => void;
+    handleMouseUp: () => void;
+    handleTouchStart: (event: any) => void;
+    handleTouch: (event: any) => void;
+    handleTouchStop: (event: any) => void;
     handleWheel: (event: any) => void;
     checkPanningTarget: (event: any) => any;
     checkIsPanningActive: (event: any) => boolean;
@@ -127,9 +143,6 @@ declare class StateProvider extends Component<StateContextProps, StateContextSta
     handlePinchStart: (event: any) => void;
     handlePinch: (event: any) => void;
     handlePinchStop: () => void;
-    handleTouchStart: (event: any) => void;
-    handleTouch: (event: any) => void;
-    handleTouchStop: () => void;
     zoomIn: (event: any) => void;
     zoomOut: (event: any) => void;
     handleDbClick: (event: any) => void;

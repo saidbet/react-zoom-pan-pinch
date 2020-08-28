@@ -44,6 +44,7 @@ export interface PropsList {
         paddingSize?: number;
         animationTime?: number;
         animationType?: string;
+        dragThreshold?: number;
     };
     pinch?: {
         disabled?: boolean;
@@ -93,4 +94,5 @@ export interface PropsList {
     onPinchingStop?: any;
     onZoomChange?: any;
     onAnimationStop?: any;
+    onZoomChangeStart?: any;
 }

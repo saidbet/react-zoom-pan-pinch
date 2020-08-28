@@ -84,17 +84,21 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
   public mouseX;
   public mouseY;
 
+  public movedSinceMouseDown = 0;
+  public isPanning = false;
+
+  public mouseDown = false;
+  public touchDown = false;
+  public movedSinceTouchDown = 0;
+  public firstTouchPos = {x: 0, y: 0};
+
   componentDidMount() {
     const passiveOption = makePassiveEventOption(false);
 
     // Panning on window to allow panning when mouse is out of wrapper
-    window.addEventListener(
-      "mousedown",
-      this.handleStartPanning,
-      passiveOption,
-    );
-    window.addEventListener("mousemove", this.handlePanning, passiveOption);
-    window.addEventListener("mouseup", this.handleStopPanning, passiveOption);
+    window.addEventListener("mousedown", this.handleMouseDown, passiveOption);
+    window.addEventListener("mousemove", this.handleMouseMove, passiveOption);
+    window.addEventListener("mouseup", this.handleMouseUp, passiveOption);
   }
 
   componentWillUnmount() {
@@ -102,15 +106,15 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
 
     window.removeEventListener(
       "mousedown",
-      this.handleStartPanning,
+      this.handleMouseDown,
       passiveOption,
     );
-    window.removeEventListener("mousemove", this.handlePanning, passiveOption);
     window.removeEventListener(
-      "mouseup",
-      this.handleStopPanning,
+      "mousemove",
+      this.handleMouseMove,
       passiveOption,
     );
+    window.removeEventListener("mouseup", this.handleMouseUp, passiveOption);
     handleDisableAnimation.call(this);
   }
 
@@ -182,6 +186,125 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
   }
 
   //////////
+  // Click events
+  //////////
+  handleMouseDown = () => {
+    this.movedSinceMouseDown = 0;
+    this.isPanning = false;
+    this.mouseDown = true;
+  };
+
+  handleMouseMove = event => {
+    if (!this.mouseDown) return;
+
+    const { pan, options } = this.stateProvider;
+
+    const mouseMovement =
+      Math.abs(event.movementX / window.innerWidth) +
+      Math.abs(event.movementY / window.innerHeight);
+
+    this.movedSinceMouseDown += mouseMovement;
+
+    if (this.movedSinceMouseDown < pan.dragThreshold) return;
+
+    if (!this.isPanning) {
+      this.isPanning = true;
+      this.handleStartPanning(event);
+    }
+
+    if (options.disabled) return;
+    if (!pan.disabled) return this.handlePanning(event);
+  };
+
+  handleMouseUp = () => {
+    this.handleStopPanning();
+    this.movedSinceMouseDown = 0;
+    this.isPanning = false;
+    this.mouseDown = false;
+  };
+
+  //////////
+  // Touch Events
+  //////////
+
+  handleTouchStart = event => {
+    const {
+      wrapperComponent,
+      contentComponent,
+      scale,
+      options: { disabled, minScale },
+    } = this.stateProvider;
+
+    const { touches } = event;
+    if (touches && touches.length === 1) {
+      this.touchDown = true;
+      this.movedSinceTouchDown = 0;
+      this.isPanning = false;
+      this.firstTouchPos = {x: touches[0].clientX, y: touches[0].clientY};
+    }
+
+    if (touches && touches.length === 2) {
+      if (
+        disabled ||
+        !wrapperComponent ||
+        !contentComponent ||
+        scale < minScale
+      )
+        return;
+
+      handleDisableAnimation.call(this);
+      return this.handlePinchStart(event);
+    }
+  };
+
+  handleTouch = event => {
+    const { pan, pinch, options } = this.stateProvider;
+
+    if (event.touches && event.touches.length === 1) {
+      if (!this.touchDown) return;
+
+      const movementX = Math.abs(this.firstTouchPos.x - event.touches[0].clientX);
+      const movementY = Math.abs(this.firstTouchPos.y - event.touches[0].clientY);
+      const movement =
+        Math.abs(movementX / window.innerWidth) +
+        Math.abs(movementY / window.innerHeight);
+
+      this.movedSinceTouchDown += movement;
+
+      if (this.movedSinceTouchDown < pan.dragThreshold) return;
+
+      if (!this.isPanning) {
+        this.isPanning = true;
+        this.handleStartPanning(event);
+      }
+
+      if (options.disabled) return;
+      if (!pan.disabled) return this.handlePanning(event);
+    }
+
+    if (event.touches && event.touches.length === 2) {
+      if (!options.disabled && !pinch.disabled) {
+        return this.handlePinch(event);
+      }
+    }
+  };
+
+  handleTouchStop = (event) => {
+    if(event.touches && event.touches.length === 1){
+      this.handleStartPanning(event);
+      this.isPanning = true;
+    }
+    
+    if(!event.touches || event.touches.length === 0){
+      this.handleStopPanning();
+      this.handlePinchStop();
+      this.movedSinceTouchDown = 0;
+      this.touchDown = false;
+      this.isPanning = false;
+    }
+  };
+
+  //////////
   // Wheel
   //////////
 
@@ -238,7 +361,9 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
     clearTimeout(wheelAnimationTimer);
     wheelAnimationTimer = setTimeout(() => {
       if (!this.mounted) return;
-      handlePaddingAnimation.call(this, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
+      handlePaddingAnimation.call(this, () =>
+        handleCallback(this.props.onAnimationStop, this.getCallbackProps()),
+      );
     }, wheelAnimationTime);
   };
 
@@ -324,6 +449,7 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
     if (this.isDown) event.preventDefault();
     if (this.checkIsPanningActive(event)) return;
     event.stopPropagation();
+
     calculateVelocityStart.call(this, event);
     handlePanning.call(this, event);
     handleCallback(this.props.onPanning, this.getCallbackProps());
@@ -344,10 +470,14 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
 
       // start velocity animation
       if (this.velocity && velocity && scale > 1) {
-        animateVelocity.call(this, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
+        animateVelocity.call(this, () =>
+          handleCallback(this.props.onAnimationStop, this.getCallbackProps()),
+        );
       } else {
         // fire fit to bounds animation
-        handlePanningAnimation.call(this, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
+        handlePanningAnimation.call(this, () =>
+          handleCallback(this.props.onAnimationStop, this.getCallbackProps()),
+        );
       }
     }
   };
@@ -361,7 +491,10 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
     event.preventDefault();
     event.stopPropagation();
 
-    this.startCoords = { x: event.touches[0].clientX - positionX, y: event.touches[0].clientY - positionY };
+    this.startCoords = {
+      x: event.touches[0].clientX - positionX,
+      y: event.touches[0].clientY - positionY,
+    };
     this.mouseX = null;
     this.mouseY = null;
 
@@ -388,43 +521,11 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
       this.lastDistance = null;
       this.pinchStartScale = null;
       this.pinchStartDistance = null;
-      handlePaddingAnimation.call(this, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
+      handlePaddingAnimation.call(this, () =>
+        handleCallback(this.props.onAnimationStop, this.getCallbackProps()),
+      );
       handleCallback(this.props.onPinchingStop, this.getCallbackProps());
     }
-  };
-
-  //////////
-  // Touch Events
-  //////////
-
-  handleTouchStart = event => {
-    const {
-      wrapperComponent,
-      contentComponent,
-      scale,
-      options: { disabled, minScale },
-    } = this.stateProvider;
-    const { touches } = event;
-    if (disabled || !wrapperComponent || !contentComponent || scale < minScale)
-      return;
-    handleDisableAnimation.call(this);
-
-    if (touches && touches.length === 1) return this.handleStartPanning(event);
-    if (touches && touches.length === 2) return this.handlePinchStart(event);
-  };
-
-  handleTouch = event => {
-    const { pan, pinch, options } = this.stateProvider;
-    if (options.disabled) return;
-    if (!pan.disabled && event.touches.length === 1)
-      return this.handlePanning(event);
-    if (!pinch.disabled && event.touches.length === 2)
-      return this.handlePinch(event);
-  };
-
-  handleTouchStop = () => {
-    this.handleStopPanning();
-    this.handlePinchStop();
   };
 
   //////////
@@ -437,11 +538,13 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
       options,
     } = this.stateProvider;
     const { wrapperComponent, contentComponent } = this.state;
-
     if (!event) throw Error("Zoom in function requires event prop");
     if (disabled || options.disabled || !wrapperComponent || !contentComponent)
       return;
-    handleZoomControls.call(this, 1, step, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
+    handleCallback(this.props.onZoomChangeStart, this.getCallbackProps());
+    handleZoomControls.call(this, 1, step, () =>
+      handleCallback(this.props.onAnimationStop, this.getCallbackProps()),
+    );
   };
 
   zoomOut = event => {
@@ -454,7 +557,10 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
     if (!event) throw Error("Zoom out function requires event prop");
     if (disabled || options.disabled || !wrapperComponent || !contentComponent)
       return;
-    handleZoomControls.call(this, -1, step, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
+    handleCallback(this.props.onZoomChangeStart, this.getCallbackProps());
+    handleZoomControls.call(this, -1, step, () =>
+      handleCallback(this.props.onAnimationStop, this.getCallbackProps()),
+    );
   };
 
   handleDbClick = event => {
@@ -467,7 +573,11 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
     if (!event) throw Error("Double click function requires event prop");
     if (disabled || options.disabled || !wrapperComponent || !contentComponent)
       return;
-    handleDoubleClick.call(this, event, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
+
+    handleCallback(this.props.onZoomChangeStart, this.getCallbackProps());
+    handleDoubleClick.call(this, event, () =>
+      handleCallback(this.props.onAnimationStop, this.getCallbackProps()),
+    );
   };
 
   setScale = (newScale, speed = 200, type = "easeOut") => {
@@ -484,12 +594,15 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
       positionY,
       scale: isNaN(newScale) ? scale : newScale,
     };
-
-    animateComponent.call(this, {
-      targetState,
-      speed,
-      type,
-    }, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
+    animateComponent.call(
+      this,
+      {
+        targetState,
+        speed,
+        type,
+      },
+      () => handleCallback(this.props.onAnimationStop, this.getCallbackProps()),
+    );
   };
 
   setPositionX = (newPosX, speed = 200, type = "easeOut") => {
@@ -508,11 +621,15 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
       scale,
     };
 
-    animateComponent.call(this, {
-      targetState,
-      speed,
-      type,
-    }, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
+    animateComponent.call(
+      this,
+      {
+        targetState,
+        speed,
+        type,
+      },
+      () => handleCallback(this.props.onAnimationStop, this.getCallbackProps()),
+    );
   };
 
   setPositionY = (newPosY, speed = 200, type = "easeOut") => {
@@ -532,11 +649,15 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
       scale,
     };
 
-    animateComponent.call(this, {
-      targetState,
-      speed,
-      type,
-    }, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
+    animateComponent.call(
+      this,
+      {
+        targetState,
+        speed,
+        type,
+      },
+      () => handleCallback(this.props.onAnimationStop, this.getCallbackProps()),
+    );
   };
 
   setTransform = (
@@ -555,18 +676,21 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
     const { wrapperComponent, contentComponent } = this.state;
     if (disabled || !transformEnabled || !wrapperComponent || !contentComponent)
       return;
-
     const targetState = {
       positionX: isNaN(newPosX) ? positionX : newPosX,
       positionY: isNaN(newPosY) ? positionY : newPosY,
       scale: isNaN(newScale) ? scale : newScale,
     };
 
-    animateComponent.call(this, {
-      targetState,
-      speed,
-      type,
-    }, ()=>handleCallback(this.props.onAnimationStop, this.getCallbackProps()));
+    animateComponent.call(
+      this,
+      {
+        targetState,
+        speed,
+        type,
+      },
+      () => handleCallback(this.props.onAnimationStop, this.getCallbackProps()),
+    );
   };
 
   resetTransform = () => {
@@ -574,7 +698,10 @@ class StateProvider extends Component<StateContextProps, StateContextState> {
       options: { disabled, transformEnabled },
     } = this.stateProvider;
     if (disabled || !transformEnabled) return;
-    resetTransformations.call(this);
+    handleCallback(this.props.onZoomChangeStart, this.getCallbackProps());
+    resetTransformations.call(this, null, () =>
+      handleCallback(this.props.onAnimationStop, this.getCallbackProps()),
+    );
   };
 
   setDefaultState = () => {
