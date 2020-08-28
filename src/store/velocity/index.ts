@@ -152,7 +152,6 @@ export function animateVelocity(callback) {
       this.applyTransformation();
     }
 
-    console.log(step);
     if(step===1 && callback)
       callback();
   });

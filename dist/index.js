@@ -856,7 +856,6 @@ function animateVelocity(callback) {
             // apply animation changes
             _this.applyTransformation();
         }
-        console.log(step);
         if (step === 1 && callback)
             callback();
     });
