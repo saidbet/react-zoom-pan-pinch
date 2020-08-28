@@ -618,12 +618,14 @@ function handleZoomToPoint(isDisabled, scale, mouseX, mouseY, event) {
 function handlePaddingAnimation$1(callback) {
     var _a = this.stateProvider, scale = _a.scale, wrapperComponent = _a.wrapperComponent, _b = _a.options, minScale = _b.minScale, limitToBounds = _b.limitToBounds, _c = _a.scalePadding, disabled = _c.disabled, animationTime = _c.animationTime, animationType = _c.animationType;
     var isDisabled = disabled || scale >= minScale;
+    if (isDisabled) {
+        callback();
+        return;
+    }
     if (scale >= 1 || limitToBounds) {
         // fire fit to bounds animation
         handlePanningAnimation.call(this, callback);
     }
-    if (isDisabled)
-        return;
     var mouseX = wrapperComponent.offsetWidth / 2;
     var mouseY = wrapperComponent.offsetHeight / 2;
     var targetState = handleZoomToPoint.call(this, false, minScale, mouseX, mouseY, null);

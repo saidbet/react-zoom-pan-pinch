@@ -174,13 +174,17 @@ export function handlePaddingAnimation(callback) {
     scalePadding: { disabled, animationTime, animationType },
   } = this.stateProvider;
   const isDisabled = disabled || scale >= minScale;
+  
+  if (isDisabled){
+    callback();
+    return;
+  }
 
   if (scale >= 1 || limitToBounds) {
     // fire fit to bounds animation
     handlePanningAnimation.call(this, callback);
   }
 
-  if (isDisabled) return;
   let mouseX = wrapperComponent.offsetWidth / 2;
   let mouseY = wrapperComponent.offsetHeight / 2;
 
